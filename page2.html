@@ -1,50 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-        <script type="module">
-
-  // Import the functions you need from the SDKs you need
-
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
-
-  // TODO: Add SDKs for Firebase products that you want to use
-
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-
-  // Your web app's Firebase configuration
-
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-
-  const firebaseConfig = {
-
-    apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
-
-    authDomain: "lsv-aperolstand.firebaseapp.com",
-
-    projectId: "lsv-aperolstand",
-
-    storageBucket: "lsv-aperolstand.firebasestorage.app",
-
-    messagingSenderId: "62289008940",
-
-    appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
-
-    measurementId: "G-N4L6V2XGF0"
-
-  };
-
-
-  // Initialize Firebase
-
-  const app = initializeApp(firebaseConfig);
-
-  const analytics = getAnalytics(app);
-
-</script>
-
   <meta charset="UTF-8">
   <title>Locked Rows</title>
   <style>
@@ -59,41 +15,58 @@
   <div id="rows"></div>
   <a href="index.html">⬅ Back to Home</a>
 
-<script>
-  const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-  function renderRow(row, id) {
-    const rowDiv = document.createElement("div");
-    rowDiv.className = "row";
+    // 🔧 Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
+      authDomain: "lsv-aperolstand.firebaseapp.com",
+      projectId: "lsv-aperolstand",
+      storageBucket: "lsv-aperolstand.firebasestorage.app",
+      messagingSenderId: "62289008940",
+      appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
+      measurementId: "G-N4L6V2XGF0"
+    };
 
-    const nums = document.createElement("div");
-    nums.className = "numbers";
-    nums.textContent = row.values.map((val, i) => `${names[i]}: ${val}`).join(" | ");
-    rowDiv.appendChild(nums);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    const delBtn = document.createElement("button");
-    delBtn.textContent = "Delete";
-    delBtn.addEventListener("click", async () => {
-      await db.collection("lockedRows").doc(id).delete();
-    });
-    rowDiv.appendChild(delBtn);
+    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+    const container = document.getElementById("rows");
 
-    return rowDiv;
-  }
+    function renderRow(row, id) {
+      const rowDiv = document.createElement("div");
+      rowDiv.className = "row";
 
-  const container = document.getElementById("rows");
+      const nums = document.createElement("div");
+      nums.className = "numbers";
+      nums.textContent = row.values.map((val, i) => `${names[i]}: ${val}`).join(" | ");
+      rowDiv.appendChild(nums);
 
-  // Subscribe to Firestore
-  db.collection("lockedRows").orderBy("ts")
-    .onSnapshot(snapshot => {
-      container.innerHTML = "";
-      snapshot.forEach(doc => {
-        container.appendChild(renderRow(doc.data(), doc.id));
+      const delBtn = document.createElement("button");
+      delBtn.textContent = "Delete";
+      delBtn.addEventListener("click", async () => {
+        await deleteDoc(doc(db, "lockedRows", id));
       });
+      rowDiv.appendChild(delBtn);
+
+      return rowDiv;
+    }
+
+    // Subscribe to lockedRows collection, ordered by timestamp
+    const q = query(collection(db, "lockedRows"), orderBy("ts"));
+    onSnapshot(q, snapshot => {
+      container.innerHTML = "";
       if (snapshot.empty) {
         container.innerHTML = "<p>No rows yet.</p>";
+        return;
       }
+      snapshot.forEach(docSnap => {
+        container.appendChild(renderRow(docSnap.data(), docSnap.id));
+      });
     });
-</script>
+  </script>
 </body>
 </html>

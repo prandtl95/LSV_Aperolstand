@@ -1,50 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-      <script type="module">
-
-  // Import the functions you need from the SDKs you need
-
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
-
-  // TODO: Add SDKs for Firebase products that you want to use
-
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-
-  // Your web app's Firebase configuration
-
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-
-  const firebaseConfig = {
-
-    apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
-
-    authDomain: "lsv-aperolstand.firebaseapp.com",
-
-    projectId: "lsv-aperolstand",
-
-    storageBucket: "lsv-aperolstand.firebasestorage.app",
-
-    messagingSenderId: "62289008940",
-
-    appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
-
-    measurementId: "G-N4L6V2XGF0"
-
-  };
-
-
-  // Initialize Firebase
-
-  const app = initializeApp(firebaseConfig);
-
-  const analytics = getAnalytics(app);
-
-</script>
-
   <meta charset="UTF-8">
   <title>Counter Page</title>
   <style>
@@ -74,52 +30,75 @@
   </div>
   <a href="index.html">⬅ Back to Home</a>
 
-<script>
-  const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
-  let counters = [0, 0, 0, 0, 0];
+  <!-- Firebase App (modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-  function updateButtons() {
-    counters.forEach((val, i) => {
-      document.getElementById(`btn${i}`).innerText = `${names[i]}: ${val}`;
-    });
-  }
+    // 🔧 Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
+      authDomain: "lsv-aperolstand.firebaseapp.com",
+      projectId: "lsv-aperolstand",
+      storageBucket: "lsv-aperolstand.firebasestorage.app",
+      messagingSenderId: "62289008940",
+      appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
+      measurementId: "G-N4L6V2XGF0"
+    };
 
-  // Load counters from Firestore
-  async function loadCounters() {
-    const doc = await db.collection("state").doc("counters").get();
-    if (doc.exists) {
-      counters = doc.data().values;
+    // ✅ Init Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Drinks + counters
+    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+    let counters = [0, 0, 0, 0, 0];
+
+    function updateButtons() {
+      counters.forEach((val, i) => {
+        document.getElementById(`btn${i}`).innerText = `${names[i]}: ${val}`;
+      });
     }
-    updateButtons();
-  }
 
-  // Save counters to Firestore
-  async function saveCounters() {
-    await db.collection("state").doc("counters").set({ values: counters });
-  }
+    async function loadCounters() {
+      const ref = doc(db, "state", "counters");
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        counters = snap.data().values;
+      }
+      updateButtons();
+    }
 
-  counters.forEach((_, i) => {
-    document.getElementById(`btn${i}`).addEventListener("click", async () => {
-      counters[i]++;
+    async function saveCounters() {
+      const ref = doc(db, "state", "counters");
+      await setDoc(ref, { values: counters });
+    }
+
+    // Button listeners
+    counters.forEach((_, i) => {
+      document.getElementById(`btn${i}`).addEventListener("click", async () => {
+        counters[i]++;
+        updateButtons();
+        await saveCounters();
+      });
+    });
+
+    document.getElementById("reset").addEventListener("click", async () => {
+      counters = [0, 0, 0, 0, 0];
       updateButtons();
       await saveCounters();
     });
-  });
 
-  document.getElementById("reset").addEventListener("click", async () => {
-    counters = [0, 0, 0, 0, 0];
-    updateButtons();
-    await saveCounters();
-  });
+    document.getElementById("lock").addEventListener("click", async () => {
+      const ref = collection(db, "lockedRows");
+      await addDoc(ref, { values: [...counters], ts: Date.now() });
+      counters = [0, 0, 0, 0, 0]; // reset after lock
+      updateButtons();
+      await saveCounters();
+    });
 
-  document.getElementById("lock").addEventListener("click", async () => {
-    await db.collection("lockedRows").add({ values: [...counters], ts: Date.now() });
-    counters = [0, 0, 0, 0, 0]; // reset after lock
-    updateButtons();
-    await saveCounters();
-  });
-
-  loadCounters();
-</script>
+    // Load counters on page load
+    loadCounters();
+  </script>
 </body>
 </html>
