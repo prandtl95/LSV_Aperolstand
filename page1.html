@@ -5,31 +5,40 @@
   <title>Counter Page</title>
   <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
-    button { margin: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; }
+    button { margin: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; border: none; border-radius: 6px; color: white; cursor: pointer; }
     .row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+    .aperol { background-color: orange; }
+    .lillet { background-color: gold; color: black; }   /* yellow works better with dark text */
+    .hugo { background-color: green; }
+    .cuba { background-color: saddlebrown; }
+    .sekt { background-color: #722f37; } /* wine-like color */
+    .control-btn { background: #444; }
   </style>
 </head>
 <body>
   <h1>Counter Page</h1>
   <div class="row">
-    <button id="btn0">0</button>
-    <button id="btn1">0</button>
-    <button id="btn2">0</button>
-    <button id="btn3">0</button>
+    <button id="btn0" class="aperol">Aperol: 0</button>
+    <button id="btn1" class="lillet">Lillet: 0</button>
+    <button id="btn2" class="hugo">Hugo: 0</button>
+    <button id="btn3" class="cuba">Cuba: 0</button>
+    <button id="btn4" class="sekt">Sekt: 0</button>
   </div>
   <div class="row">
-    <button id="reset">Reset</button>
-    <button id="lock">Lock</button>
+    <button id="reset" class="control-btn">Reset</button>
+    <button id="lock" class="control-btn">Lock</button>
   </div>
   <a href="index.html">⬅ Back to Home</a>
 
   <script>
+    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+
     // Load counters from localStorage or initialize
-    let counters = JSON.parse(localStorage.getItem("counters") || "[0,0,0,0]");
+    let counters = JSON.parse(localStorage.getItem("counters") || "[0,0,0,0,0]");
 
     function updateButtons() {
       counters.forEach((val, i) => {
-        document.getElementById(`btn${i}`).innerText = val;
+        document.getElementById(`btn${i}`).innerText = `${names[i]}: ${val}`;
       });
       localStorage.setItem("counters", JSON.stringify(counters));
     }
@@ -42,7 +51,7 @@
     });
 
     document.getElementById("reset").addEventListener("click", () => {
-      counters = [0, 0, 0, 0];
+      counters = [0, 0, 0, 0, 0];
       updateButtons();
     });
 
@@ -51,8 +60,8 @@
       saved.push([...counters]);
       localStorage.setItem("lockedRows", JSON.stringify(saved));
 
-      // ✅ Reset counters after locking
-      counters = [0, 0, 0, 0];
+      // Reset after lock
+      counters = [0, 0, 0, 0, 0];
       updateButtons();
     });
 
