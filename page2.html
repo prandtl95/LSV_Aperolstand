@@ -6,7 +6,7 @@
   <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
     .row { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
-    .numbers { font-family: monospace; font-size: 1.2rem; display: flex; gap: 1rem; }
+    .numbers { font-family: monospace; font-size: 1.1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
     button { padding: 0.5rem 1rem; }
   </style>
 </head>
@@ -16,6 +16,8 @@
   <a href="index.html">⬅ Back to Home</a>
 
   <script>
+    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+
     function renderRows() {
       const container = document.getElementById("rows");
       container.innerHTML = "";
@@ -32,7 +34,9 @@
 
         const nums = document.createElement("div");
         nums.className = "numbers";
-        nums.textContent = row.join(" ");
+
+        // Show "Name: value" for each item
+        nums.textContent = row.map((val, i) => `${names[i]}: ${val}`).join(" | ");
         rowDiv.appendChild(nums);
 
         const delBtn = document.createElement("button");
