@@ -50,7 +50,10 @@
       const saved = JSON.parse(localStorage.getItem("lockedRows") || "[]");
       saved.push([...counters]);
       localStorage.setItem("lockedRows", JSON.stringify(saved));
-      updateButtons(); // persist before staying
+
+      // ✅ Reset counters after locking
+      counters = [0, 0, 0, 0];
+      updateButtons();
     });
 
     updateButtons();
