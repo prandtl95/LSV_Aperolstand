@@ -1,6 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+        <script type="module">
+
+  // Import the functions you need from the SDKs you need
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-analytics.js";
+
+  // TODO: Add SDKs for Firebase products that you want to use
+
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+
+  // Your web app's Firebase configuration
+
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+  const firebaseConfig = {
+
+    apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
+
+    authDomain: "lsv-aperolstand.firebaseapp.com",
+
+    projectId: "lsv-aperolstand",
+
+    storageBucket: "lsv-aperolstand.firebasestorage.app",
+
+    messagingSenderId: "62289008940",
+
+    appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
+
+    measurementId: "G-N4L6V2XGF0"
+
+  };
+
+
+  // Initialize Firebase
+
+  const app = initializeApp(firebaseConfig);
+
+  const analytics = getAnalytics(app);
+
+</script>
+
   <meta charset="UTF-8">
   <title>Locked Rows</title>
   <style>
@@ -15,52 +59,41 @@
   <div id="rows"></div>
   <a href="index.html">⬅ Back to Home</a>
 
-  <script>
-    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+<script>
+  const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
 
-    function renderRows() {
-      const container = document.getElementById("rows");
+  function renderRow(row, id) {
+    const rowDiv = document.createElement("div");
+    rowDiv.className = "row";
+
+    const nums = document.createElement("div");
+    nums.className = "numbers";
+    nums.textContent = row.values.map((val, i) => `${names[i]}: ${val}`).join(" | ");
+    rowDiv.appendChild(nums);
+
+    const delBtn = document.createElement("button");
+    delBtn.textContent = "Delete";
+    delBtn.addEventListener("click", async () => {
+      await db.collection("lockedRows").doc(id).delete();
+    });
+    rowDiv.appendChild(delBtn);
+
+    return rowDiv;
+  }
+
+  const container = document.getElementById("rows");
+
+  // Subscribe to Firestore
+  db.collection("lockedRows").orderBy("ts")
+    .onSnapshot(snapshot => {
       container.innerHTML = "";
-      const saved = JSON.parse(localStorage.getItem("lockedRows") || "[]");
-
-      if (saved.length === 0) {
-        container.innerHTML = "<p>No rows yet.</p>";
-        return;
-      }
-
-      saved.forEach((row, index) => {
-        const rowDiv = document.createElement("div");
-        rowDiv.className = "row";
-
-        const nums = document.createElement("div");
-        nums.className = "numbers";
-
-        // Show "Name: value" for each item
-        nums.textContent = row.map((val, i) => `${names[i]}: ${val}`).join(" | ");
-        rowDiv.appendChild(nums);
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Delete";
-        delBtn.addEventListener("click", () => {
-          saved.splice(index, 1);
-          localStorage.setItem("lockedRows", JSON.stringify(saved));
-          renderRows();
-        });
-        rowDiv.appendChild(delBtn);
-
-        container.appendChild(rowDiv);
+      snapshot.forEach(doc => {
+        container.appendChild(renderRow(doc.data(), doc.id));
       });
-    }
-
-    // Initial render
-    renderRows();
-
-    // Update when storage changes (from another tab/window)
-    window.addEventListener("storage", (e) => {
-      if (e.key === "lockedRows") {
-        renderRows();
+      if (snapshot.empty) {
+        container.innerHTML = "<p>No rows yet.</p>";
       }
     });
-  </script>
+</script>
 </body>
 </html>
