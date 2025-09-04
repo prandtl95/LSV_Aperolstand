@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Counter Page</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
+    button { margin: 0.5rem; padding: 1rem 2rem; font-size: 1.2rem; }
+    .row { display: flex; gap: 1rem; margin-bottom: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Counter Page</h1>
+  <div class="row">
+    <button id="btn0">0</button>
+    <button id="btn1">0</button>
+    <button id="btn2">0</button>
+    <button id="btn3">0</button>
+  </div>
+  <div class="row">
+    <button id="reset">Reset</button>
+    <button id="lock">Lock</button>
+  </div>
+  <a href="index.html">⬅ Back to Home</a>
+
+  <script>
+    // Load counters from localStorage or initialize
+    let counters = JSON.parse(localStorage.getItem("counters") || "[0,0,0,0]");
+
+    function updateButtons() {
+      counters.forEach((val, i) => {
+        document.getElementById(`btn${i}`).innerText = val;
+      });
+      localStorage.setItem("counters", JSON.stringify(counters));
+    }
+
+    counters.forEach((_, i) => {
+      document.getElementById(`btn${i}`).addEventListener("click", () => {
+        counters[i]++;
+        updateButtons();
+      });
+    });
+
+    document.getElementById("reset").addEventListener("click", () => {
+      counters = [0, 0, 0, 0];
+      updateButtons();
+    });
+
+    document.getElementById("lock").addEventListener("click", () => {
+      const saved = JSON.parse(localStorage.getItem("lockedRows") || "[]");
+      saved.push([...counters]);
+      localStorage.setItem("lockedRows", JSON.stringify(saved));
+      updateButtons(); // persist before staying
+    });
+
+    updateButtons();
+  </script>
+</body>
+</html>

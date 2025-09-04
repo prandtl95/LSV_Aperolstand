@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Locked Rows</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
+    .row { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
+    .numbers { font-family: monospace; font-size: 1.2rem; display: flex; gap: 1rem; }
+    button { padding: 0.5rem 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Locked Rows</h1>
+  <div id="rows"></div>
+  <a href="index.html">⬅ Back to Home</a>
+
+  <script>
+    function renderRows() {
+      const container = document.getElementById("rows");
+      container.innerHTML = "";
+      const saved = JSON.parse(localStorage.getItem("lockedRows") || "[]");
+
+      if (saved.length === 0) {
+        container.innerHTML = "<p>No rows yet.</p>";
+        return;
+      }
+
+      saved.forEach((row, index) => {
+        const rowDiv = document.createElement("div");
+        rowDiv.className = "row";
+
+        const nums = document.createElement("div");
+        nums.className = "numbers";
+        nums.textContent = row.join(" ");
+        rowDiv.appendChild(nums);
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", () => {
+          saved.splice(index, 1);
+          localStorage.setItem("lockedRows", JSON.stringify(saved));
+          renderRows();
+        });
+        rowDiv.appendChild(delBtn);
+
+        container.appendChild(rowDiv);
+      });
+    }
+
+    // Initial render
+    renderRows();
+
+    // Update when storage changes (from another tab/window)
+    window.addEventListener("storage", (e) => {
+      if (e.key === "lockedRows") {
+        renderRows();
+      }
+    });
+  </script>
+</body>
+</html>
