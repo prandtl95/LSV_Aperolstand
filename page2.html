@@ -15,6 +15,9 @@
   <div id="rows"></div>
   <a href="index.html">⬅ Back to Home</a>
 
+  <!-- 🔊 Sound file (replace "ding.mp3" with your own later) -->
+  <audio id="newRowSound" src="HeissUndFettig.mp3" preload="auto"></audio>
+
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
     import { getFirestore, collection, query, orderBy, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
@@ -35,6 +38,9 @@
 
     const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
     const container = document.getElementById("rows");
+    const sound = document.getElementById("newRowSound");
+
+    let knownIds = new Set(); // keep track of already shown rows
 
     function renderRow(row, id) {
       const rowDiv = document.createElement("div");
@@ -63,8 +69,20 @@
         container.innerHTML = "<p>No rows yet.</p>";
         return;
       }
+
       snapshot.forEach(docSnap => {
-        container.appendChild(renderRow(docSnap.data(), docSnap.id));
+        const id = docSnap.id;
+        const rowData = docSnap.data();
+        container.appendChild(renderRow(rowData, id));
+
+        // 🔊 Play sound only for *newly added* rows
+        if (!knownIds.has(id)) {
+          sound.currentTime = 0; // rewind sound
+          sound.play().catch(() => {
+            // ignore autoplay restrictions until user interacts
+          });
+        }
+        knownIds.add(id);
       });
     });
   </script>
