@@ -2,34 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Counter App</title>
+  <title>Firebase Auth Test</title>
   <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
-    a { margin: 1rem; padding: 1rem 2rem; background: #007acc; color: white; text-decoration: none; border-radius: 5px; }
-    a:hover { background: #005fa3; }
-    #auth-container button { padding: 1rem 2rem; font-size: 1.2rem; }
-    #error-container { color: red; margin-top: 1rem; }
+    button { padding: 1rem 2rem; font-size: 1.2rem; }
+    #status { margin-top: 1rem; font-weight: bold; }
+    #error { color: red; margin-top: 1rem; }
   </style>
 </head>
 <body>
-  <h1>Welcome to the Counter App</h1>
+  <h1>Firebase Authentication Test</h1>
 
-  <div id="auth-container">
-    <button id="login-button">Login Anonymously</button>
-  </div>
-
-  <div id="links-container" style="display: none;">
-    <p>Choose a page:</p>
-    <a href="page1.html">Go to Counter Page</a>
-    <a href="page2.html">Go to Locked Rows Page</a>
-  </div>
-
-  <div id="error-container"></div>
+  <button id="login-button">Login Anonymously</button>
+  
+  <div id="status">Not logged in</div>
+  <div id="error"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
 
+    // 🔧 Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
       authDomain: "lsv-aperolstand.firebaseapp.com",
@@ -44,33 +37,27 @@
     const auth = getAuth(app);
 
     const loginButton = document.getElementById('login-button');
-    const authContainer = document.getElementById('auth-container');
-    const linksContainer = document.getElementById('links-container');
-    const errorContainer = document.getElementById('error-container');
+    const statusDiv = document.getElementById('status');
+    const errorDiv = document.getElementById('error');
 
     loginButton.addEventListener('click', () => {
-      // Clear previous errors
-      errorContainer.textContent = '';
-      
-      signInAnonymously(auth)
-        .catch((error) => {
-          console.error("Authentication error:", error);
-          // Display the error message to the user
-          errorContainer.textContent = `Login failed: ${error.message}`;
-        });
-    });
+      statusDiv.textContent = 'Attempting to log in...';
+      errorDiv.textContent = ''; // Clear previous errors
 
-    onAuthStateChanged(auth, (user) => {
-      if (user) {
-        // User is signed in.
-        authContainer.style.display = 'none';
-        linksContainer.style.display = 'block';
-        errorContainer.textContent = ''; // Clear errors on success
-      } else {
-        // User is signed out.
-        authContainer.style.display = 'block';
-        linksContainer.style.display = 'none';
-      }
+      console.log('Login button clicked. Attempting to sign in anonymously...');
+
+      signInAnonymously(auth)
+        .then((userCredential) => {
+          const user = userCredential.user;
+          console.log('Successfully signed in anonymously:', user);
+          statusDiv.textContent = `Success! Logged in with UID: ${user.uid}`;
+          loginButton.style.display = 'none'; // Hide button after success
+        })
+        .catch((error) => {
+          console.error('Firebase Authentication Error:', error);
+          statusDiv.textContent = 'Login Failed';
+          errorDiv.textContent = `Error (${error.code}): ${error.message}`;
+        });
     });
   </script>
 </body>
