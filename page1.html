@@ -28,12 +28,14 @@
     <button id="reset" class="control-btn">Reset</button>
     <button id="lock" class="control-btn">Lock</button>
   </div>
+  <h2>Logged Orders</h2>
+  <div id="locked-rows-container"></div>
   <a href="index.html">⬅ Back to Home</a>
 
   <!-- Firebase App (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -74,6 +76,22 @@
       await setDoc(ref, { values: counters });
     }
 
+    async function loadLockedRows() {
+      const container = document.getElementById("locked-rows-container");
+      container.innerHTML = ""; // Clear previous content
+      const ref = collection(db, "lockedRows");
+      const snapshot = await getDocs(ref);
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const row = document.createElement("div");
+        row.classList.add("row");
+        const values = data.values.join(", ");
+        const date = new Date(data.ts).toLocaleString();
+        row.innerText = `[${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
+        container.appendChild(row);
+      });
+    }
+
     // Button listeners
     counters.forEach((_, i) => {
       document.getElementById(`btn${i}`).addEventListener("click", async () => {
@@ -95,10 +113,12 @@
       counters = [0, 0, 0, 0, 0]; // reset after lock
       updateButtons();
       await saveCounters();
+      await loadLockedRows();
     });
 
     // Load counters on page load
     loadCounters();
+    loadLockedRows();
   </script>
 </body>
 </html>
