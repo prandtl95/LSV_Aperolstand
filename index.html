@@ -7,12 +7,61 @@
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
     a { margin: 1rem; padding: 1rem 2rem; background: #007acc; color: white; text-decoration: none; border-radius: 5px; }
     a:hover { background: #005fa3; }
+    #auth-container button { padding: 1rem 2rem; font-size: 1.2rem; }
   </style>
 </head>
 <body>
   <h1>Welcome to the Counter App</h1>
-  <p>Choose a page:</p>
-  <a href="page1.html">Go to Counter Page</a>
-  <a href="page2.html">Go to Locked Rows Page</a>
+
+  <div id="auth-container">
+    <button id="login-button">Login Anonymously</button>
+  </div>
+
+  <div id="links-container" style="display: none;">
+    <p>Choose a page:</p>
+    <a href="page1.html">Go to Counter Page</a>
+    <a href="page2.html">Go to Locked Rows Page</a>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-auth.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
+      authDomain: "lsv-aperolstand.firebaseapp.com",
+      projectId: "lsv-aperolstand",
+      storageBucket: "lsv-aperolstand.firebasestorage.app",
+      messagingSenderId: "62289008940",
+      appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
+      measurementId: "G-N4L6V2XGF0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginButton = document.getElementById('login-button');
+    const authContainer = document.getElementById('auth-container');
+    const linksContainer = document.getElementById('links-container');
+
+    loginButton.addEventListener('click', () => {
+      signInAnonymously(auth)
+        .catch((error) => {
+          console.error("Authentication error:", error);
+        });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        // User is signed in.
+        authContainer.style.display = 'none';
+        linksContainer.style.display = 'block';
+      } else {
+        // User is signed out.
+        authContainer.style.display = 'block';
+        linksContainer.style.display = 'none';
+      }
+    });
+  </script>
 </body>
 </html>
