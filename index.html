@@ -8,6 +8,7 @@
     a { margin: 1rem; padding: 1rem 2rem; background: #007acc; color: white; text-decoration: none; border-radius: 5px; }
     a:hover { background: #005fa3; }
     #auth-container button { padding: 1rem 2rem; font-size: 1.2rem; }
+    #error-container { color: red; margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -22,6 +23,8 @@
     <a href="page1.html">Go to Counter Page</a>
     <a href="page2.html">Go to Locked Rows Page</a>
   </div>
+
+  <div id="error-container"></div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
@@ -43,11 +46,17 @@
     const loginButton = document.getElementById('login-button');
     const authContainer = document.getElementById('auth-container');
     const linksContainer = document.getElementById('links-container');
+    const errorContainer = document.getElementById('error-container');
 
     loginButton.addEventListener('click', () => {
+      // Clear previous errors
+      errorContainer.textContent = '';
+      
       signInAnonymously(auth)
         .catch((error) => {
           console.error("Authentication error:", error);
+          // Display the error message to the user
+          errorContainer.textContent = `Login failed: ${error.message}`;
         });
     });
 
@@ -56,6 +65,7 @@
         // User is signed in.
         authContainer.style.display = 'none';
         linksContainer.style.display = 'block';
+        errorContainer.textContent = ''; // Clear errors on success
       } else {
         // User is signed out.
         authContainer.style.display = 'block';
