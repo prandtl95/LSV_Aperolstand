@@ -35,7 +35,7 @@
   <!-- Firebase App (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -80,7 +80,8 @@
       const container = document.getElementById("locked-rows-container");
       container.innerHTML = ""; // Clear previous content
       const ref = collection(db, "lockedRows");
-      const snapshot = await getDocs(ref);
+      const q = query(ref, orderBy("ts", "desc"));
+      const snapshot = await getDocs(q);
       snapshot.forEach(doc => {
         const data = doc.data();
         const row = document.createElement("div");
