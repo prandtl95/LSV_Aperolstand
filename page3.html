@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Order Data</title>
+  <style>
+    body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; max-width: 900px; }
+    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: center; }
+    th { background: #f0f0f0; }
+    input[type="number"] { width: 4rem; }
+    input[type="datetime-local"] { font-size: 0.9rem; }
+    button { padding: 0.4rem 0.8rem; margin: 0 0.2rem; cursor: pointer; }
+    .save-btn { background: #2e7d32; color: white; border: none; border-radius: 4px; }
+    .delete-btn { background: #c62828; color: white; border: none; border-radius: 4px; }
+    .totals { font-weight: bold; margin-top: 1rem; }
+    .status { font-size: 0.85rem; color: #2e7d32; min-height: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>Order Data</h1>
+  <p>Edit any field and click Save to update that order.</p>
+  <table>
+    <thead>
+      <tr id="headerRow">
+        <th>Order #</th>
+        <th>Aperol</th>
+        <th>Lillet</th>
+        <th>Hugo</th>
+        <th>Cuba</th>
+        <th>Sekt</th>
+        <th>Time</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="totals" id="totals"></div>
+  <p><a href="index.html">⬅ Back to Home</a></p>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+
+    // 🔧 Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
+      authDomain: "lsv-aperolstand.firebaseapp.com",
+      projectId: "lsv-aperolstand",
+      storageBucket: "lsv-aperolstand.firebasestorage.app",
+      messagingSenderId: "62289008940",
+      appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
+      measurementId: "G-N4L6V2XGF0"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+    const tbody = document.getElementById("rows");
+    const totalsDiv = document.getElementById("totals");
+
+    function toLocalInputValue(ts) {
+      const d = new Date(ts);
+      const pad = n => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    }
+
+    function renderRow(id, data) {
+      const tr = document.createElement("tr");
+
+      const orderInput = document.createElement("input");
+      orderInput.type = "number";
+      orderInput.value = data.orderNumber ?? "";
+      const orderTd = document.createElement("td");
+      orderTd.appendChild(orderInput);
+      tr.appendChild(orderTd);
+
+      const valueInputs = [];
+      names.forEach((_, i) => {
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = "0";
+        input.value = data.values?.[i] ?? 0;
+        valueInputs.push(input);
+        const td = document.createElement("td");
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+
+      const tsInput = document.createElement("input");
+      tsInput.type = "datetime-local";
+      tsInput.value = toLocalInputValue(data.ts ?? Date.now());
+      const tsTd = document.createElement("td");
+      tsTd.appendChild(tsInput);
+      tr.appendChild(tsTd);
+
+      const actionsTd = document.createElement("td");
+
+      const status = document.createElement("div");
+      status.className = "status";
+
+      const saveBtn = document.createElement("button");
+      saveBtn.textContent = "Save";
+      saveBtn.className = "save-btn";
+      saveBtn.addEventListener("click", async () => {
+        const newValues = valueInputs.map(inp => parseInt(inp.value, 10) || 0);
+        const newTs = new Date(tsInput.value).getTime();
+        await updateDoc(doc(db, "lockedRows", id), {
+          orderNumber: parseInt(orderInput.value, 10) || 0,
+          values: newValues,
+          ts: newTs
+        });
+        status.textContent = "Saved ✓";
+        setTimeout(() => { status.textContent = ""; }, 1500);
+      });
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.className = "delete-btn";
+      deleteBtn.addEventListener("click", async () => {
+        if (confirm("Delete this order?")) {
+          await deleteDoc(doc(db, "lockedRows", id));
+        }
+      });
+
+      actionsTd.appendChild(saveBtn);
+      actionsTd.appendChild(deleteBtn);
+      actionsTd.appendChild(status);
+      tr.appendChild(actionsTd);
+
+      return tr;
+    }
+
+    function renderTotals(snapshot) {
+      const totals = [0, 0, 0, 0, 0];
+      snapshot.forEach(docSnap => {
+        const values = docSnap.data().values || [];
+        values.forEach((v, i) => { totals[i] += v; });
+      });
+      totalsDiv.textContent = "Totals: " + names.map((n, i) => `${n}: ${totals[i]}`).join(" | ");
+    }
+
+    const q = query(collection(db, "lockedRows"), orderBy("ts"));
+    onSnapshot(q, snapshot => {
+      tbody.innerHTML = "";
+      if (snapshot.empty) {
+        tbody.innerHTML = "<tr><td colspan='8'>No orders yet.</td></tr>";
+        totalsDiv.textContent = "";
+        return;
+      }
+      snapshot.forEach(docSnap => {
+        tbody.appendChild(renderRow(docSnap.id, docSnap.data()));
+      });
+      renderTotals(snapshot);
+    });
+  </script>
+</body>
+</html>

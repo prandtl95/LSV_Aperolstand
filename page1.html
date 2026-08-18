@@ -33,7 +33,7 @@
   <!-- Firebase App (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -90,8 +90,17 @@
     });
 
     document.getElementById("lock").addEventListener("click", async () => {
+      // Atomically get the next order number so concurrent locks never collide
+      const counterRef = doc(db, "state", "orderCounter");
+      const orderNumber = await runTransaction(db, async (tx) => {
+        const snap = await tx.get(counterRef);
+        const next = (snap.exists() ? snap.data().value : 0) + 1;
+        tx.set(counterRef, { value: next });
+        return next;
+      });
+
       const ref = collection(db, "lockedRows");
-      await addDoc(ref, { values: [...counters], ts: Date.now() });
+      await addDoc(ref, { orderNumber, values: [...counters], ts: Date.now() });
       counters = [0, 0, 0, 0, 0]; // reset after lock
       updateButtons();
       await saveCounters();

@@ -7,6 +7,7 @@
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
     .row { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
     .numbers { font-family: monospace; font-size: 1.1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .order-number { font-weight: bold; min-width: 3rem; }
     button { padding: 0.5rem 1rem; }
   </style>
 </head>
@@ -45,6 +46,11 @@
     function renderRow(row, id) {
       const rowDiv = document.createElement("div");
       rowDiv.className = "row";
+
+      const orderLabel = document.createElement("div");
+      orderLabel.className = "order-number";
+      orderLabel.textContent = row.orderNumber ? `#${row.orderNumber}` : "#?";
+      rowDiv.appendChild(orderLabel);
 
       const nums = document.createElement("div");
       nums.className = "numbers";
