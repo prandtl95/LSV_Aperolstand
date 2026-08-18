@@ -35,7 +35,7 @@
   <!-- Firebase App (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, runTransaction } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, runTransaction, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -118,8 +118,13 @@
         return next;
       });
 
-      const ref = collection(db, "lockedRows");
-      await addDoc(ref, { orderNumber, values: [...counters], ts: Date.now() });
+      const orderData = { orderNumber, values: [...counters], ts: Date.now() };
+      // "lockedRows" is the working queue shown/cleared on page2.
+      // "orderLog" is a permanent record kept for page3, unaffected by page2 deletions.
+      await Promise.all([
+        addDoc(collection(db, "lockedRows"), orderData),
+        addDoc(collection(db, "orderLog"), orderData)
+      ]);
       counters = [0, 0, 0, 0, 0]; // reset after lock
       updateButtons();
       await saveCounters();

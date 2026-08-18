@@ -15,10 +15,27 @@
     .delete-btn { background: #c62828; color: white; border: none; border-radius: 4px; }
     .totals { font-weight: bold; margin-top: 1rem; }
     .status { font-size: 0.85rem; color: #2e7d32; min-height: 1rem; }
+    .prices-table { max-width: 500px; margin-bottom: 1.5rem; }
+    .prices-table input[type="number"] { width: 5rem; }
   </style>
 </head>
 <body>
   <h1>Order Data</h1>
+  <p>This log is permanent: deleting an order on the Locked Rows page does not remove it from here.</p>
+
+  <h2>Drink Prices</h2>
+  <table class="prices-table">
+    <thead>
+      <tr id="priceHeaderRow"></tr>
+    </thead>
+    <tbody>
+      <tr id="priceRow"></tr>
+    </tbody>
+  </table>
+  <button id="savePricesBtn" class="save-btn">Save Prices</button>
+  <div class="status" id="priceStatus"></div>
+
+  <h2>Orders</h2>
   <p>Edit any field and click Save to update that order.</p>
   <table>
     <thead>
@@ -40,7 +57,7 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -59,6 +76,44 @@
     const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
     const tbody = document.getElementById("rows");
     const totalsDiv = document.getElementById("totals");
+    const LOG_COLLECTION = "orderLog"; // permanent log, independent of page2's "lockedRows" queue
+
+    // ---- Prices ----
+    const priceHeaderRow = document.getElementById("priceHeaderRow");
+    const priceRow = document.getElementById("priceRow");
+    const priceStatus = document.getElementById("priceStatus");
+    let currentPrices = [0, 0, 0, 0, 0];
+    const priceInputs = names.map((name, i) => {
+      const th = document.createElement("th");
+      th.textContent = name;
+      priceHeaderRow.appendChild(th);
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "0.01";
+      input.value = 0;
+      const td = document.createElement("td");
+      td.appendChild(input);
+      priceRow.appendChild(td);
+      return input;
+    });
+
+    document.getElementById("savePricesBtn").addEventListener("click", async () => {
+      const newPrices = priceInputs.map(inp => parseFloat(inp.value) || 0);
+      await setDoc(doc(db, "state", "prices"), { values: newPrices });
+      priceStatus.textContent = "Saved ✓";
+      setTimeout(() => { priceStatus.textContent = ""; }, 1500);
+    });
+
+    onSnapshot(doc(db, "state", "prices"), snap => {
+      currentPrices = snap.exists() ? snap.data().values : [0, 0, 0, 0, 0];
+      priceInputs.forEach((inp, i) => { inp.value = currentPrices[i] ?? 0; });
+      renderTotals();
+    });
+
+    // ---- Orders ----
+    let latestOrders = [];
 
     function toLocalInputValue(ts) {
       const d = new Date(ts);
@@ -106,7 +161,7 @@
       saveBtn.addEventListener("click", async () => {
         const newValues = valueInputs.map(inp => parseInt(inp.value, 10) || 0);
         const newTs = new Date(tsInput.value).getTime();
-        await updateDoc(doc(db, "lockedRows", id), {
+        await updateDoc(doc(db, LOG_COLLECTION, id), {
           orderNumber: parseInt(orderInput.value, 10) || 0,
           values: newValues,
           ts: newTs
@@ -119,8 +174,8 @@
       deleteBtn.textContent = "Delete";
       deleteBtn.className = "delete-btn";
       deleteBtn.addEventListener("click", async () => {
-        if (confirm("Delete this order?")) {
-          await deleteDoc(doc(db, "lockedRows", id));
+        if (confirm("Permanently delete this order from the log?")) {
+          await deleteDoc(doc(db, LOG_COLLECTION, id));
         }
       });
 
@@ -132,18 +187,23 @@
       return tr;
     }
 
-    function renderTotals(snapshot) {
+    function renderTotals() {
       const totals = [0, 0, 0, 0, 0];
-      snapshot.forEach(docSnap => {
-        const values = docSnap.data().values || [];
-        values.forEach((v, i) => { totals[i] += v; });
+      latestOrders.forEach(data => {
+        (data.values || []).forEach((v, i) => { totals[i] += v; });
       });
-      totalsDiv.textContent = "Totals: " + names.map((n, i) => `${n}: ${totals[i]}`).join(" | ");
+      const totalDrinks = totals.reduce((sum, v) => sum + v, 0);
+      const revenue = totals.reduce((sum, v, i) => sum + v * (currentPrices[i] || 0), 0);
+      totalsDiv.innerHTML =
+        "Totals: " + names.map((n, i) => `${n}: ${totals[i]}`).join(" | ") +
+        `<br>Total drinks sold: ${totalDrinks}` +
+        `<br>Total revenue: €${revenue.toFixed(2)}`;
     }
 
-    const q = query(collection(db, "lockedRows"), orderBy("ts"));
+    const q = query(collection(db, LOG_COLLECTION), orderBy("ts"));
     onSnapshot(q, snapshot => {
       tbody.innerHTML = "";
+      latestOrders = snapshot.docs.map(docSnap => docSnap.data());
       if (snapshot.empty) {
         tbody.innerHTML = "<tr><td colspan='8'>No orders yet.</td></tr>";
         totalsDiv.textContent = "";
@@ -152,7 +212,7 @@
       snapshot.forEach(docSnap => {
         tbody.appendChild(renderRow(docSnap.id, docSnap.data()));
       });
-      renderTotals(snapshot);
+      renderTotals();
     });
   </script>
 </body>
