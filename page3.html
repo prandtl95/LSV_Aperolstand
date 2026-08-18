@@ -43,7 +43,7 @@
         <th>Order #</th>
         <th>Aperol</th>
         <th>Lillet</th>
-        <th>Hugo</th>
+        <th>Sarti</th>
         <th>Cuba</th>
         <th>Sekt</th>
         <th>Time</th>
@@ -73,7 +73,7 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+    const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt"];
     const tbody = document.getElementById("rows");
     const totalsDiv = document.getElementById("totals");
     const LOG_COLLECTION = "orderLog"; // permanent log, independent of page2's "lockedRows" queue

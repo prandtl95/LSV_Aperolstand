@@ -9,7 +9,7 @@
     .row { display: flex; gap: 1rem; margin-bottom: 1rem; }
     .aperol { background-color: orange; }
     .lillet { background-color: gold; color: black; }   /* yellow works better with dark text */
-    .hugo { background-color: green; }
+    .Sarti { background-color: green; }
     .cuba { background-color: saddlebrown; }
     .sekt { background-color: #722f37; } /* wine-like color */
     .control-btn { background: #444; }
@@ -20,7 +20,7 @@
   <div class="row">
     <button id="btn0" class="aperol">Aperol: 0</button>
     <button id="btn1" class="lillet">Lillet: 0</button>
-    <button id="btn2" class="hugo">Hugo: 0</button>
+    <button id="btn2" class="Sarti">Sarti: 0</button>
     <button id="btn3" class="cuba">Cuba: 0</button>
     <button id="btn4" class="sekt">Sekt: 0</button>
   </div>
@@ -53,7 +53,7 @@
     const db = getFirestore(app);
 
     // Drinks + counters
-    const names = ["Aperol", "Lillet", "Hugo", "Cuba", "Sekt"];
+    const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt"];
     let counters = [0, 0, 0, 0, 0];
 
     function updateButtons() {
