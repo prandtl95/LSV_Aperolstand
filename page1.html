@@ -16,6 +16,8 @@
     .limoncello { background-color: #ffeb3b; color: black; }
     .control-btn { background: #444; }
     .danger-btn { background: #b71c1c; }
+    .row-delete-btn { background: #b71c1c; padding: 0.3rem 0.8rem; font-size: 0.9rem; margin: 0; }
+    .logged-row { display: flex; align-items: center; gap: 1rem; justify-content: space-between; }
   </style>
 </head>
 <body>
@@ -34,9 +36,6 @@
     <button id="lock" class="control-btn">Lock</button>
   </div>
   <h2>Logged Orders</h2>
-  <div class="row">
-    <button id="deleteLoggedRows" class="danger-btn">Delete Logged Rows</button>
-  </div>
   <div id="locked-rows-container"></div>
   <a href="index.html">⬅ Back to Home</a>
 
@@ -92,13 +91,25 @@
       const ref = collection(db, "lockedRows");
       const q = query(ref, orderBy("ts", "desc"));
       const snapshot = await getDocs(q);
-      snapshot.forEach(doc => {
-        const data = doc.data();
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
         const row = document.createElement("div");
-        row.classList.add("row");
-        const values = data.values.join(", ");
+        row.classList.add("row", "logged-row");
+
+        const label = document.createElement("span");
         const date = new Date(data.ts).toLocaleString();
-        row.innerText = `[${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
+        label.innerText = `[${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
+        row.appendChild(label);
+
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "Delete";
+        delBtn.classList.add("row-delete-btn");
+        delBtn.addEventListener("click", async () => {
+          await deleteDoc(doc(db, "lockedRows", docSnap.id));
+          await loadLockedRows();
+        });
+        row.appendChild(delBtn);
+
         container.appendChild(row);
       });
     }
@@ -138,13 +149,6 @@
       counters = [0, 0, 0, 0, 0, 0, 0]; // reset after lock
       updateButtons();
       await saveCounters();
-      await loadLockedRows();
-    });
-
-    document.getElementById("deleteLoggedRows").addEventListener("click", async () => {
-      if (!confirm("Delete all logged rows? This cannot be undone.")) return;
-      const snapshot = await getDocs(collection(db, "lockedRows"));
-      await Promise.all(snapshot.docs.map(d => deleteDoc(doc(db, "lockedRows", d.id))));
       await loadLockedRows();
     });
 
