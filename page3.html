@@ -27,10 +27,11 @@
   <h2>Drink Prices</h2>
   <table class="prices-table">
     <thead>
-      <tr id="priceHeaderRow"></tr>
+      <tr id="priceHeaderRow"><th></th></tr>
     </thead>
     <tbody>
-      <tr id="priceRow"></tr>
+      <tr id="priceRow"><td>Price (€)</td></tr>
+      <tr id="revenueRow"><td>Revenue (€)</td></tr>
     </tbody>
   </table>
   <button id="savePricesBtn" class="save-btn">Save Prices</button>
@@ -88,8 +89,10 @@
     // ---- Prices ----
     const priceHeaderRow = document.getElementById("priceHeaderRow");
     const priceRow = document.getElementById("priceRow");
+    const revenueRow = document.getElementById("revenueRow");
     const priceStatus = document.getElementById("priceStatus");
     let currentPrices = names.map(() => 0);
+    const revenueCells = [];
     const priceInputs = names.map((name, i) => {
       const th = document.createElement("th");
       th.textContent = name;
@@ -103,8 +106,26 @@
       const td = document.createElement("td");
       td.appendChild(input);
       priceRow.appendChild(td);
+
+      const revenueTd = document.createElement("td");
+      revenueTd.textContent = "0.00";
+      revenueRow.appendChild(revenueTd);
+      revenueCells.push(revenueTd);
+
       return input;
     });
+
+    // Trailing "Total" column
+    const totalTh = document.createElement("th");
+    totalTh.textContent = "Total";
+    priceHeaderRow.appendChild(totalTh);
+    const priceTotalCell = document.createElement("td");
+    priceTotalCell.textContent = "—";
+    priceRow.appendChild(priceTotalCell);
+    const totalRevenueCell = document.createElement("td");
+    totalRevenueCell.style.fontWeight = "bold";
+    totalRevenueCell.textContent = "0.00";
+    revenueRow.appendChild(totalRevenueCell);
 
     document.getElementById("savePricesBtn").addEventListener("click", async () => {
       const newPrices = priceInputs.map(inp => parseFloat(inp.value) || 0);
@@ -152,6 +173,7 @@
         const input = document.createElement("input");
         input.type = "number";
         input.min = "0";
+        input.step = "0.01";
         input.value = data.values?.[i] ?? 0;
         valueInputs.push(input);
         const td = document.createElement("td");
@@ -175,7 +197,7 @@
       saveBtn.textContent = "Save";
       saveBtn.className = "save-btn";
       saveBtn.addEventListener("click", async () => {
-        const newValues = valueInputs.map(inp => parseInt(inp.value, 10) || 0);
+        const newValues = valueInputs.map(inp => parseFloat(inp.value) || 0);
         const newTs = new Date(tsInput.value).getTime();
         await updateDoc(doc(db, LOG_COLLECTION, id), {
           orderNumber: parseInt(orderInput.value, 10) || 0,
@@ -203,17 +225,26 @@
       return tr;
     }
 
+    function fmt(n) {
+      return (Math.round(n * 100) / 100).toString();
+    }
+
     function renderTotals() {
       const totals = names.map(() => 0);
       latestOrders.forEach(data => {
         (data.values || []).forEach((v, i) => { totals[i] += v; });
       });
       const totalDrinks = totals.reduce((sum, v) => sum + v, 0);
-      const revenue = totals.reduce((sum, v, i) => sum + v * (currentPrices[i] || 0), 0);
+      const revenues = totals.map((v, i) => v * (currentPrices[i] || 0));
+      const totalRevenue = revenues.reduce((sum, v) => sum + v, 0);
+
+      revenueCells.forEach((cell, i) => { cell.textContent = revenues[i].toFixed(2); });
+      totalRevenueCell.textContent = totalRevenue.toFixed(2);
+
       totalsDiv.innerHTML =
-        "Totals: " + names.map((n, i) => `${n}: ${totals[i]}`).join(" | ") +
-        `<br>Total drinks sold: ${totalDrinks}` +
-        `<br>Total revenue: €${revenue.toFixed(2)}`;
+        "Totals: " + names.map((n, i) => `${n}: ${fmt(totals[i])}`).join(" | ") +
+        `<br>Total drinks sold: ${fmt(totalDrinks)}` +
+        `<br>Total revenue: €${totalRevenue.toFixed(2)}`;
     }
 
     const q = query(collection(db, LOG_COLLECTION), orderBy("ts"));
