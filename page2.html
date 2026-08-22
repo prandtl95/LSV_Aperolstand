@@ -6,9 +6,17 @@
   <style>
     body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 2rem; }
     .row { display: flex; gap: 1rem; align-items: center; margin-bottom: 1rem; }
-    .numbers { font-family: monospace; font-size: 1.1rem; display: flex; gap: 1rem; flex-wrap: wrap; }
+    .numbers { font-family: monospace; font-size: 1.1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .order-number { font-weight: bold; min-width: 3rem; }
     button { padding: 0.5rem 1rem; }
+    .drink-badge { padding: 0.3rem 0.7rem; border-radius: 5px; color: white; font-weight: bold; }
+    .badge-aperol { background-color: orange; }
+    .badge-lillet { background-color: gold; color: black; }
+    .badge-sarti { background-color: green; }
+    .badge-cuba { background-color: saddlebrown; }
+    .badge-sekt { background-color: #722f37; }
+    .badge-intern { background-color: steelblue; }
+    .badge-limoncello { background-color: #ffeb3b; color: black; }
   </style>
 </head>
 <body>
@@ -38,6 +46,7 @@
     const db = getFirestore(app);
 
     const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt", "Intern", "Limoncello"];
+    const badgeClasses = ["badge-aperol", "badge-lillet", "badge-sarti", "badge-cuba", "badge-sekt", "badge-intern", "badge-limoncello"];
     const container = document.getElementById("rows");
     const sound = document.getElementById("newRowSound");
 
@@ -54,7 +63,13 @@
 
       const nums = document.createElement("div");
       nums.className = "numbers";
-      nums.textContent = row.values.map((val, i) => `${names[i]}: ${val}`).join(" | ");
+      row.values.forEach((val, i) => {
+        if (!val) return; // only highlight drinks that were actually ordered
+        const badge = document.createElement("span");
+        badge.className = `drink-badge ${badgeClasses[i]}`;
+        badge.textContent = `${names[i]}: ${val}`;
+        nums.appendChild(badge);
+      });
       rowDiv.appendChild(nums);
 
       const delBtn = document.createElement("button");
