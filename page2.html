@@ -50,6 +50,12 @@
     const container = document.getElementById("rows");
     const sound = document.getElementById("newRowSound");
 
+    // NATO alphabet word for an order number, cycling back to Alfa after Zulu
+    const NATO_WORDS = ["Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
+    function natoWord(n) {
+      return n > 0 ? NATO_WORDS[(n - 1) % NATO_WORDS.length] : "";
+    }
+
     let knownIds = new Set(); // keep track of already shown rows
 
     function renderRow(row, id) {
@@ -58,7 +64,7 @@
 
       const orderLabel = document.createElement("div");
       orderLabel.className = "order-number";
-      orderLabel.textContent = row.orderNumber ? `#${row.orderNumber}` : "#?";
+      orderLabel.textContent = row.orderNumber ? `#${row.orderNumber} ${natoWord(row.orderNumber)}` : "#?";
       rowDiv.appendChild(orderLabel);
 
       const nums = document.createElement("div");

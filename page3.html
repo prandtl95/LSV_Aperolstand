@@ -87,6 +87,12 @@
     const totalsDiv = document.getElementById("totals");
     const LOG_COLLECTION = "orderLog"; // permanent log, independent of page2's "lockedRows" queue
 
+    // NATO alphabet word for an order number, cycling back to Alfa after Zulu
+    const NATO_WORDS = ["Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
+    function natoWord(n) {
+      return n > 0 ? NATO_WORDS[(n - 1) % NATO_WORDS.length] : "";
+    }
+
     // ---- Prices ----
     const priceHeaderRow = document.getElementById("priceHeaderRow");
     const priceRow = document.getElementById("priceRow");
@@ -187,8 +193,17 @@
       const orderInput = document.createElement("input");
       orderInput.type = "number";
       orderInput.value = data.orderNumber ?? "";
+
+      const natoLabel = document.createElement("span");
+      natoLabel.textContent = natoWord(parseInt(orderInput.value, 10) || 0);
+      orderInput.addEventListener("input", () => {
+        natoLabel.textContent = natoWord(parseInt(orderInput.value, 10) || 0);
+      });
+
       const orderTd = document.createElement("td");
       orderTd.appendChild(orderInput);
+      orderTd.appendChild(document.createElement("br"));
+      orderTd.appendChild(natoLabel);
       tr.appendChild(orderTd);
 
       const valueInputs = [];

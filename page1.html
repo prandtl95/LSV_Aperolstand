@@ -63,6 +63,12 @@
     const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt", "Intern", "Limoncello"];
     let counters = [0, 0, 0, 0, 0, 0, 0];
 
+    // NATO alphabet word for an order number, cycling back to Alfa after Zulu
+    const NATO_WORDS = ["Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
+    function natoWord(n) {
+      return n > 0 ? NATO_WORDS[(n - 1) % NATO_WORDS.length] : "";
+    }
+
     function updateButtons() {
       counters.forEach((val, i) => {
         document.getElementById(`btn${i}`).innerText = `${names[i]}: ${val}`;
@@ -98,7 +104,7 @@
 
         const label = document.createElement("span");
         const date = new Date(data.ts).toLocaleString();
-        const orderLabel = data.orderNumber ? `#${data.orderNumber}` : "#?";
+        const orderLabel = data.orderNumber ? `#${data.orderNumber} ${natoWord(data.orderNumber)}` : "#?";
         label.innerText = `${orderLabel} [${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
         row.appendChild(label);
 
