@@ -12,7 +12,10 @@
     .Sarti { background-color: green; }
     .cuba { background-color: saddlebrown; }
     .sekt { background-color: #722f37; } /* wine-like color */
+    .intern { background-color: steelblue; }
+    .limoncello { background-color: #ffeb3b; color: black; }
     .control-btn { background: #444; }
+    .danger-btn { background: #b71c1c; }
   </style>
 </head>
 <body>
@@ -23,19 +26,24 @@
     <button id="btn2" class="Sarti">Sarti: 0</button>
     <button id="btn3" class="cuba">Cuba: 0</button>
     <button id="btn4" class="sekt">Sekt: 0</button>
+    <button id="btn5" class="intern">Intern: 0</button>
+    <button id="btn6" class="limoncello">Limoncello: 0</button>
   </div>
   <div class="row">
     <button id="reset" class="control-btn">Reset</button>
     <button id="lock" class="control-btn">Lock</button>
   </div>
   <h2>Logged Orders</h2>
+  <div class="row">
+    <button id="deleteLoggedRows" class="danger-btn">Delete Logged Rows</button>
+  </div>
   <div id="locked-rows-container"></div>
   <a href="index.html">⬅ Back to Home</a>
 
   <!-- Firebase App (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, runTransaction, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, runTransaction, query, orderBy, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -53,8 +61,8 @@
     const db = getFirestore(app);
 
     // Drinks + counters
-    const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt"];
-    let counters = [0, 0, 0, 0, 0];
+    const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt", "Intern", "Limoncello"];
+    let counters = [0, 0, 0, 0, 0, 0, 0];
 
     function updateButtons() {
       counters.forEach((val, i) => {
@@ -66,7 +74,9 @@
       const ref = doc(db, "state", "counters");
       const snap = await getDoc(ref);
       if (snap.exists()) {
-        counters = snap.data().values;
+        const saved = snap.data().values;
+        // Pad in case drinks were added after this data was saved
+        counters = names.map((_, i) => saved[i] ?? 0);
       }
       updateButtons();
     }
@@ -103,7 +113,7 @@
     });
 
     document.getElementById("reset").addEventListener("click", async () => {
-      counters = [0, 0, 0, 0, 0];
+      counters = [0, 0, 0, 0, 0, 0, 0];
       updateButtons();
       await saveCounters();
     });
@@ -125,9 +135,16 @@
         addDoc(collection(db, "lockedRows"), orderData),
         addDoc(collection(db, "orderLog"), orderData)
       ]);
-      counters = [0, 0, 0, 0, 0]; // reset after lock
+      counters = [0, 0, 0, 0, 0, 0, 0]; // reset after lock
       updateButtons();
       await saveCounters();
+      await loadLockedRows();
+    });
+
+    document.getElementById("deleteLoggedRows").addEventListener("click", async () => {
+      if (!confirm("Delete all logged rows? This cannot be undone.")) return;
+      const snapshot = await getDocs(collection(db, "lockedRows"));
+      await Promise.all(snapshot.docs.map(d => deleteDoc(doc(db, "lockedRows", d.id))));
       await loadLockedRows();
     });
 
