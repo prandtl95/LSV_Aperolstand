@@ -31,7 +31,8 @@
     </thead>
     <tbody>
       <tr id="priceRow"><td>Price (€)</td></tr>
-      <tr id="revenueRow"><td>Revenue (€)</td></tr>
+      <tr id="profitRow"><td>Profit (€)</td></tr>
+      <tr id="totalProfitRow"><td>Total Profit (€)</td></tr>
     </tbody>
   </table>
   <button id="savePricesBtn" class="save-btn">Save Prices</button>
@@ -89,30 +90,44 @@
     // ---- Prices ----
     const priceHeaderRow = document.getElementById("priceHeaderRow");
     const priceRow = document.getElementById("priceRow");
-    const revenueRow = document.getElementById("revenueRow");
+    const profitRow = document.getElementById("profitRow");
+    const totalProfitRow = document.getElementById("totalProfitRow");
     const priceStatus = document.getElementById("priceStatus");
     let currentPrices = names.map(() => 0);
-    const revenueCells = [];
-    const priceInputs = names.map((name, i) => {
+    let currentProfits = names.map(() => 0);
+    const priceInputs = [];
+    const profitInputs = [];
+    const totalProfitCells = [];
+
+    names.forEach(name => {
       const th = document.createElement("th");
       th.textContent = name;
       priceHeaderRow.appendChild(th);
 
-      const input = document.createElement("input");
-      input.type = "number";
-      input.min = "0";
-      input.step = "0.01";
-      input.value = 0;
-      const td = document.createElement("td");
-      td.appendChild(input);
-      priceRow.appendChild(td);
+      const priceInput = document.createElement("input");
+      priceInput.type = "number";
+      priceInput.min = "0";
+      priceInput.step = "0.01";
+      priceInput.value = 0;
+      const priceTd = document.createElement("td");
+      priceTd.appendChild(priceInput);
+      priceRow.appendChild(priceTd);
+      priceInputs.push(priceInput);
 
-      const revenueTd = document.createElement("td");
-      revenueTd.textContent = "0.00";
-      revenueRow.appendChild(revenueTd);
-      revenueCells.push(revenueTd);
+      const profitInput = document.createElement("input");
+      profitInput.type = "number";
+      profitInput.min = "0";
+      profitInput.step = "0.01";
+      profitInput.value = 0;
+      const profitTd = document.createElement("td");
+      profitTd.appendChild(profitInput);
+      profitRow.appendChild(profitTd);
+      profitInputs.push(profitInput);
 
-      return input;
+      const totalProfitTd = document.createElement("td");
+      totalProfitTd.textContent = "0.00";
+      totalProfitRow.appendChild(totalProfitTd);
+      totalProfitCells.push(totalProfitTd);
     });
 
     // Trailing "Total" column
@@ -122,21 +137,29 @@
     const priceTotalCell = document.createElement("td");
     priceTotalCell.textContent = "—";
     priceRow.appendChild(priceTotalCell);
-    const totalRevenueCell = document.createElement("td");
-    totalRevenueCell.style.fontWeight = "bold";
-    totalRevenueCell.textContent = "0.00";
-    revenueRow.appendChild(totalRevenueCell);
+    const profitTotalCell = document.createElement("td");
+    profitTotalCell.textContent = "—";
+    profitRow.appendChild(profitTotalCell);
+    const totalProfitSumCell = document.createElement("td");
+    totalProfitSumCell.style.fontWeight = "bold";
+    totalProfitSumCell.textContent = "0.00";
+    totalProfitRow.appendChild(totalProfitSumCell);
 
     document.getElementById("savePricesBtn").addEventListener("click", async () => {
       const newPrices = priceInputs.map(inp => parseFloat(inp.value) || 0);
-      await setDoc(doc(db, "state", "prices"), { values: newPrices });
+      const newProfits = profitInputs.map(inp => parseFloat(inp.value) || 0);
+      await setDoc(doc(db, "state", "prices"), { prices: newPrices, profits: newProfits });
       priceStatus.textContent = "Saved ✓";
       setTimeout(() => { priceStatus.textContent = ""; }, 1500);
     });
 
     onSnapshot(doc(db, "state", "prices"), snap => {
-      currentPrices = snap.exists() ? snap.data().values : names.map(() => 0);
+      const data = snap.exists() ? snap.data() : {};
+      // "values" is the legacy field name from before the price/profit split
+      currentPrices = data.prices ?? data.values ?? names.map(() => 0);
+      currentProfits = data.profits ?? names.map(() => 0);
       priceInputs.forEach((inp, i) => { inp.value = currentPrices[i] ?? 0; });
+      profitInputs.forEach((inp, i) => { inp.value = currentProfits[i] ?? 0; });
       renderTotals();
     });
 
@@ -235,16 +258,19 @@
         (data.values || []).forEach((v, i) => { totals[i] += v; });
       });
       const totalDrinks = totals.reduce((sum, v) => sum + v, 0);
-      const revenues = totals.map((v, i) => v * (currentPrices[i] || 0));
-      const totalRevenue = revenues.reduce((sum, v) => sum + v, 0);
+      const priceRevenues = totals.map((v, i) => v * (currentPrices[i] || 0));
+      const profitRevenues = totals.map((v, i) => v * (currentProfits[i] || 0));
+      const totalPrice = priceRevenues.reduce((sum, v) => sum + v, 0);
+      const totalProfit = profitRevenues.reduce((sum, v) => sum + v, 0);
 
-      revenueCells.forEach((cell, i) => { cell.textContent = revenues[i].toFixed(2); });
-      totalRevenueCell.textContent = totalRevenue.toFixed(2);
+      totalProfitCells.forEach((cell, i) => { cell.textContent = profitRevenues[i].toFixed(2); });
+      totalProfitSumCell.textContent = totalProfit.toFixed(2);
 
       totalsDiv.innerHTML =
         "Totals: " + names.map((n, i) => `${n}: ${fmt(totals[i])}`).join(" | ") +
         `<br>Total drinks sold: ${fmt(totalDrinks)}` +
-        `<br>Total revenue: €${totalRevenue.toFixed(2)}`;
+        `<br>Total price: €${totalPrice.toFixed(2)}` +
+        `<br>Total profit: €${totalProfit.toFixed(2)}`;
     }
 
     const q = query(collection(db, LOG_COLLECTION), orderBy("ts"));
