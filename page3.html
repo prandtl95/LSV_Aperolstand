@@ -13,6 +13,7 @@
     button { padding: 0.4rem 0.8rem; margin: 0 0.2rem; cursor: pointer; }
     .save-btn { background: #2e7d32; color: white; border: none; border-radius: 4px; }
     .delete-btn { background: #c62828; color: white; border: none; border-radius: 4px; }
+    .danger-btn { background: #b71c1c; color: white; border: none; border-radius: 4px; padding: 0.6rem 1rem; }
     .totals { font-weight: bold; margin-top: 1rem; }
     .status { font-size: 0.85rem; color: #2e7d32; min-height: 1rem; }
     .prices-table { max-width: 500px; margin-bottom: 1.5rem; }
@@ -34,6 +35,10 @@
   </table>
   <button id="savePricesBtn" class="save-btn">Save Prices</button>
   <div class="status" id="priceStatus"></div>
+
+  <h2>Order ID Counter</h2>
+  <button id="resetCounterBtn" class="danger-btn">Reset ID Counter to 1</button>
+  <div class="status" id="counterStatus"></div>
 
   <h2>Orders</h2>
   <p>Edit any field and click Save to update that order.</p>
@@ -112,6 +117,15 @@
       currentPrices = snap.exists() ? snap.data().values : names.map(() => 0);
       priceInputs.forEach((inp, i) => { inp.value = currentPrices[i] ?? 0; });
       renderTotals();
+    });
+
+    // ---- Order ID counter ----
+    const counterStatus = document.getElementById("counterStatus");
+    document.getElementById("resetCounterBtn").addEventListener("click", async () => {
+      if (!confirm("Reset the order ID counter back to 1? The next locked order will become #1.")) return;
+      await setDoc(doc(db, "state", "orderCounter"), { value: 0 });
+      counterStatus.textContent = "Reset ✓";
+      setTimeout(() => { counterStatus.textContent = ""; }, 1500);
     });
 
     // ---- Orders ----

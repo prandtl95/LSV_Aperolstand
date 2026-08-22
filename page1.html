@@ -42,7 +42,7 @@
   <!-- Firebase App (modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc, collection, addDoc, runTransaction, query, orderBy, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, collection, runTransaction, query, orderBy, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
     // 🔧 Your Firebase config
     const firebaseConfig = {
@@ -98,14 +98,19 @@
 
         const label = document.createElement("span");
         const date = new Date(data.ts).toLocaleString();
-        label.innerText = `[${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
+        const orderLabel = data.orderNumber ? `#${data.orderNumber}` : "#?";
+        label.innerText = `${orderLabel} [${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
         row.appendChild(label);
 
         const delBtn = document.createElement("button");
         delBtn.textContent = "Delete";
         delBtn.classList.add("row-delete-btn");
         delBtn.addEventListener("click", async () => {
-          await deleteDoc(doc(db, "lockedRows", docSnap.id));
+          // Shares its id with the permanent orderLog entry on page3, so remove both.
+          await Promise.all([
+            deleteDoc(doc(db, "lockedRows", docSnap.id)),
+            deleteDoc(doc(db, "orderLog", docSnap.id))
+          ]);
           await loadLockedRows();
         });
         row.appendChild(delBtn);
@@ -142,9 +147,11 @@
       const orderData = { orderNumber, values: [...counters], ts: Date.now() };
       // "lockedRows" is the working queue shown/cleared on page2.
       // "orderLog" is a permanent record kept for page3, unaffected by page2 deletions.
+      // Both docs share the same id so a page1 delete can remove the matching orderLog entry too.
+      const sharedId = doc(collection(db, "lockedRows")).id;
       await Promise.all([
-        addDoc(collection(db, "lockedRows"), orderData),
-        addDoc(collection(db, "orderLog"), orderData)
+        setDoc(doc(db, "lockedRows", sharedId), orderData),
+        setDoc(doc(db, "orderLog", sharedId), orderData)
       ]);
       counters = [0, 0, 0, 0, 0, 0, 0]; // reset after lock
       updateButtons();
