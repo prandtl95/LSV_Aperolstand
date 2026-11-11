@@ -65,21 +65,10 @@
   <p><a href="index.html">⬅ Back to Home</a></p>
 
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { app, requireAuth } from "./auth.js";
     import { getFirestore, collection, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-    // 🔧 Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
-      authDomain: "lsv-aperolstand.firebaseapp.com",
-      projectId: "lsv-aperolstand",
-      storageBucket: "lsv-aperolstand.firebasestorage.app",
-      messagingSenderId: "62289008940",
-      appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
-      measurementId: "G-N4L6V2XGF0"
-    };
-
-    const app = initializeApp(firebaseConfig);
+    await requireAuth();
     const db = getFirestore(app);
 
     const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt", "Intern", "Limoncello"];

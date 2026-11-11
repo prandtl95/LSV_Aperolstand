@@ -41,22 +41,10 @@
 
   <!-- Firebase App (modular) -->
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-app.js";
+    import { app, requireAuth } from "./auth.js";
     import { getFirestore, doc, getDoc, setDoc, collection, runTransaction, query, orderBy, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/12.2.1/firebase-firestore.js";
 
-    // 🔧 Your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCF8rg7QuK6oNBwDgqgxWEes8A_4WvllVU",
-      authDomain: "lsv-aperolstand.firebaseapp.com",
-      projectId: "lsv-aperolstand",
-      storageBucket: "lsv-aperolstand.firebasestorage.app",
-      messagingSenderId: "62289008940",
-      appId: "1:62289008940:web:db4822f38b0b6fcfe7f489",
-      measurementId: "G-N4L6V2XGF0"
-    };
-
-    // ✅ Init Firebase
-    const app = initializeApp(firebaseConfig);
+    await requireAuth();
     const db = getFirestore(app);
 
     // Drinks + counters
