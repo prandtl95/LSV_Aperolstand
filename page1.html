@@ -12,8 +12,11 @@
     .Sarti { background-color: green; }
     .cuba { background-color: saddlebrown; }
     .sekt { background-color: #722f37; } /* wine-like color */
-    .intern { background-color: steelblue; }
     .limoncello { background-color: #ffeb3b; color: black; }
+    .intern-toggle { display: flex; align-items: center; gap: 0.6rem; font-size: 1.2rem; font-weight: bold; cursor: pointer; padding: 0.6rem 1.2rem; border: 2px solid steelblue; border-radius: 6px; color: steelblue; user-select: none; }
+    .intern-toggle input { width: 1.6rem; height: 1.6rem; accent-color: steelblue; cursor: pointer; margin: 0; }
+    .intern-toggle.active { background: steelblue; color: white; }
+    .intern-tag { background: steelblue; color: white; font-weight: bold; padding: 0.1rem 0.5rem; border-radius: 4px; }
     .control-btn { background: #444; }
     .danger-btn { background: #b71c1c; }
     .row-delete-btn { background: #b71c1c; padding: 0.3rem 0.8rem; font-size: 0.9rem; margin: 0; }
@@ -28,8 +31,12 @@
     <button id="btn2" class="Sarti">Sarti: 0</button>
     <button id="btn3" class="cuba">Cuba: 0</button>
     <button id="btn4" class="sekt">Sekt: 0</button>
-    <button id="btn5" class="intern">Intern: 0</button>
     <button id="btn6" class="limoncello">Limoncello: 0</button>
+  </div>
+  <div class="row">
+    <label class="intern-toggle" id="internLabel">
+      <input type="checkbox" id="internToggle"> Intern
+    </label>
   </div>
   <div class="row">
     <button id="reset" class="control-btn">Reset</button>
@@ -50,6 +57,16 @@
     // Drinks + counters
     const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt", "Intern", "Limoncello"];
     let counters = [0, 0, 0, 0, 0, 0, 0];
+    // Slot 5 ("Intern") is no longer counted by a button; internal orders are flagged via the toggle instead.
+    const INTERN = 5;
+    let intern = false;
+    const internToggle = document.getElementById("internToggle");
+    const internLabel = document.getElementById("internLabel");
+
+    function updateInternToggle() {
+      internToggle.checked = intern;
+      internLabel.classList.toggle("active", intern);
+    }
 
     // NATO alphabet word for an order number, cycling back to Alfa after Zulu
     const NATO_WORDS = ["Alfa", "Bravo", "Charlie", "Delta", "Echo", "Foxtrot", "Golf", "Hotel", "India", "Juliett", "Kilo", "Lima", "Mike", "November", "Oscar", "Papa", "Quebec", "Romeo", "Sierra", "Tango", "Uniform", "Victor", "Whiskey", "X-ray", "Yankee", "Zulu"];
@@ -59,6 +76,7 @@
 
     function updateButtons() {
       counters.forEach((val, i) => {
+        if (i === INTERN) return;
         document.getElementById(`btn${i}`).innerText = `${names[i]}: ${val}`;
       });
     }
@@ -70,13 +88,16 @@
         const saved = snap.data().values;
         // Pad in case drinks were added after this data was saved
         counters = names.map((_, i) => saved[i] ?? 0);
+        counters[INTERN] = 0;
+        intern = snap.data().intern ?? false;
       }
       updateButtons();
+      updateInternToggle();
     }
 
     async function saveCounters() {
       const ref = doc(db, "state", "counters");
-      await setDoc(ref, { values: counters });
+      await setDoc(ref, { values: counters, intern });
     }
 
     async function loadLockedRows() {
@@ -93,7 +114,17 @@
         const label = document.createElement("span");
         const date = new Date(data.ts).toLocaleString();
         const orderLabel = data.orderNumber ? `#${data.orderNumber} ${natoWord(data.orderNumber)}` : "#?";
-        label.innerText = `${orderLabel} [${date}] ${names.map((name, i) => `${name}: ${data.values[i]}`).join(', ')}`;
+        const drinks = names
+          .map((name, i) => (data.values[i] ? `${name}: ${data.values[i]}` : null))
+          .filter(Boolean)
+          .join(', ');
+        label.innerText = `${orderLabel} [${date}] ${drinks}`;
+        if (data.intern) {
+          const tag = document.createElement("span");
+          tag.className = "intern-tag";
+          tag.textContent = "INTERN";
+          label.prepend(tag, " ");
+        }
         row.appendChild(label);
 
         const delBtn = document.createElement("button");
@@ -115,6 +146,7 @@
 
     // Button listeners
     counters.forEach((_, i) => {
+      if (i === INTERN) return;
       document.getElementById(`btn${i}`).addEventListener("click", async () => {
         counters[i]++;
         updateButtons();
@@ -122,9 +154,17 @@
       });
     });
 
+    internToggle.addEventListener("change", async () => {
+      intern = internToggle.checked;
+      updateInternToggle();
+      await saveCounters();
+    });
+
     document.getElementById("reset").addEventListener("click", async () => {
       counters = [0, 0, 0, 0, 0, 0, 0];
+      intern = false;
       updateButtons();
+      updateInternToggle();
       await saveCounters();
     });
 
@@ -138,7 +178,7 @@
         return next;
       });
 
-      const orderData = { orderNumber, values: [...counters], ts: Date.now() };
+      const orderData = { orderNumber, values: [...counters], intern, ts: Date.now() };
       // "lockedRows" is the working queue shown/cleared on page2.
       // "orderLog" is a permanent record kept for page3, unaffected by page2 deletions.
       // Both docs share the same id so a page1 delete can remove the matching orderLog entry too.
@@ -148,7 +188,9 @@
         setDoc(doc(db, "orderLog", sharedId), orderData)
       ]);
       counters = [0, 0, 0, 0, 0, 0, 0]; // reset after lock
+      intern = false;
       updateButtons();
+      updateInternToggle();
       await saveCounters();
       await loadLockedRows();
     });

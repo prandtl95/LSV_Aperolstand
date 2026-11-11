@@ -72,6 +72,7 @@
     const db = getFirestore(app);
 
     const names = ["Aperol", "Lillet", "Sarti", "Cuba", "Sekt", "Intern", "Limoncello"];
+    const INTERN = 5;
     const tbody = document.getElementById("rows");
     const totalsDiv = document.getElementById("totals");
     const LOG_COLLECTION = "orderLog"; // permanent log, independent of page2's "lockedRows" queue
@@ -196,7 +197,19 @@
       tr.appendChild(orderTd);
 
       const valueInputs = [];
+      let internCheckbox;
       names.forEach((_, i) => {
+        if (i === INTERN) {
+          internCheckbox = document.createElement("input");
+          internCheckbox.type = "checkbox";
+          internCheckbox.checked = !!data.intern;
+          internCheckbox.title = "Internal order: all drinks count as Intern";
+          const td = document.createElement("td");
+          td.appendChild(internCheckbox);
+          tr.appendChild(td);
+          valueInputs.push(null);
+          return;
+        }
         const input = document.createElement("input");
         input.type = "number";
         input.min = "0";
@@ -224,11 +237,15 @@
       saveBtn.textContent = "Save";
       saveBtn.className = "save-btn";
       saveBtn.addEventListener("click", async () => {
-        const newValues = valueInputs.map(inp => parseFloat(inp.value) || 0);
+        // The Intern slot has no input anymore; keep whatever legacy count it holds.
+        const newValues = valueInputs.map((inp, i) =>
+          inp ? (parseFloat(inp.value) || 0) : (data.values?.[i] ?? 0)
+        );
         const newTs = new Date(tsInput.value).getTime();
         await updateDoc(doc(db, LOG_COLLECTION, id), {
           orderNumber: parseInt(orderInput.value, 10) || 0,
           values: newValues,
+          intern: internCheckbox.checked,
           ts: newTs
         });
         status.textContent = "Saved ✓";
@@ -259,7 +276,13 @@
     function renderTotals() {
       const totals = names.map(() => 0);
       latestOrders.forEach(data => {
-        (data.values || []).forEach((v, i) => { totals[i] += v; });
+        const values = data.values || [];
+        if (data.intern) {
+          // Internal orders are billed as Intern items regardless of which drinks they contain
+          totals[INTERN] += values.reduce((sum, v) => sum + v, 0);
+        } else {
+          values.forEach((v, i) => { totals[i] += v; });
+        }
       });
       const totalDrinks = totals.reduce((sum, v) => sum + v, 0);
       const priceRevenues = totals.map((v, i) => v * (currentPrices[i] || 0));

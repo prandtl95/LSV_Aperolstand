@@ -17,6 +17,7 @@
     .badge-sekt { background-color: #722f37; }
     .badge-intern { background-color: steelblue; }
     .badge-limoncello { background-color: #ffeb3b; color: black; }
+    .intern-tag { background: white; color: steelblue; border: 2px solid steelblue; }
   </style>
 </head>
 <body>
@@ -58,6 +59,12 @@
 
       const nums = document.createElement("div");
       nums.className = "numbers";
+      if (row.intern) {
+        const tag = document.createElement("span");
+        tag.className = "drink-badge intern-tag";
+        tag.textContent = "INTERN";
+        nums.appendChild(tag);
+      }
       row.values.forEach((val, i) => {
         if (!val) return; // only highlight drinks that were actually ordered
         const badge = document.createElement("span");
